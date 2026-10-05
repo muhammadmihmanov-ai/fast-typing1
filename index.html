@@ -1,0 +1,408 @@
+# Re-verifying the file creation just in case, though the code is already generated.
+# Let's provide the full standalone single HTML code directly in the response text as requested ("hamma kodlar html da nolsin" / "код скинь сука").
+full_code = """<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Koinot Urushi - Space Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0b16;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(135deg, #050510 0%, #151030 100%);
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background: transparent;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 8px #00ffff;
+            letter-spacing: 1px;
+        }
+        #menu-screen, #gameover-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 16, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #00ffff;
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 14px;
+            color: #a0a0c0;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .btn {
+            background: transparent;
+            color: #ff007f;
+            border: 2px solid #ff007f;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #ff007f;
+            color: #fff;
+            box-shadow: 0 0 25px rgba(255, 0, 127, 0.8);
+            transform: scale(1.05);
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    
+    <div class="ui-layer">
+        <div class="header">
+            <div>Ball: <span id="score">0</span></div>
+            <div>Jon: <span id="lives">❤️❤️❤️</span></div>
+        </div>
+    </div>
+
+    <!-- Bosh menu -->
+    <div id="menu-screen">
+        <h1>NEON KOINOT</h1>
+        <p>Koinotni neon dushmanlardan qutqaring!<br>Kemani boshqarish uchun sichqoncha yoki barmoqdan foydalaning.</p>
+        <button class="btn" id="start-btn">O'YINNI BOSHLASH</button>
+    </div>
+
+    <!-- O'yin tugadi menyusi -->
+    <div id="gameover-screen" class="hidden">
+        <h1>O'YIN TUGADI</h1>
+        <p>Siz to'plagan ball: <span id="final-score">0</span></p>
+        <button class="btn" id="restart-btn">QAYTA O'YNASH</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const finalScoreEl = document.getElementById('final-score');
+const menuScreen = document.getElementById('menu-screen');
+const gameoverScreen = document.getElementById('gameover-screen');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+
+let score = 0;
+let lives = 3;
+let isPlaying = false;
+let animationId = null;
+
+let mouseX = canvas.width / 2;
+let mouseY = canvas.height - 80;
+
+let player = {
+    x: canvas.width / 2,
+    y: canvas.height - 80,
+    width: 36,
+    height: 36,
+    speed: 0.1
+};
+
+let bullets = [];
+let enemies = [];
+let particles = [];
+let stars = [];
+
+for (let i = 0; i < 60; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speed: Math.random() * 1.5 + 0.5
+    });
+}
+
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    if(e.touches.length > 0) {
+        mouseX = e.touches[0].clientX - rect.left;
+        mouseY = e.touches[0].clientY - rect.top;
+    }
+    e.preventDefault();
+}, { passive: false });
+
+let shootTimer = 0;
+
+function resetGame() {
+    score = 0;
+    lives = 3;
+    bullets = [];
+    enemies = [];
+    particles = [];
+    scoreEl.innerText = score;
+    livesEl.innerText = '❤️❤️❤️';
+    player.x = canvas.width / 2;
+    player.y = canvas.height - 80;
+    mouseX = player.x;
+    mouseY = player.y;
+}
+
+startBtn.addEventListener('click', () => {
+    menuScreen.classList.add('hidden');
+    resetGame();
+    isPlaying = true;
+    loop();
+});
+
+restartBtn.addEventListener('click', () => {
+    gameoverScreen.classList.add('hidden');
+    resetGame();
+    isPlaying = true;
+    loop();
+});
+
+function createParticles(x, y, color) {
+    for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            alpha: 1,
+            color: color,
+            size: Math.random() * 3 + 1
+        });
+    }
+}
+
+function spawnEnemy() {
+    if (Math.random() < 0.03) {
+        const size = Math.random() * 16 + 18;
+        enemies.push({
+            x: Math.random() * (canvas.width - size * 2) + size,
+            y: -size,
+            radius: size,
+            speed: Math.random() * 2 + 1.5,
+            color: Math.random() > 0.5 ? '#ff007f' : '#bc13fe'
+        });
+    }
+}
+
+function loop() {
+    if (!isPlaying) return;
+
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffffff';
+    stars.forEach(star => {
+        star.y += star.speed;
+        if (star.y > canvas.height) star.y = 0;
+        ctx.globalAlpha = Math.random() * 0.7 + 0.3;
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
+    ctx.globalAlpha = 1;
+
+    player.x += (mouseX - player.x) * player.speed;
+    player.y += (mouseY - player.y) * player.speed;
+
+    player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
+    player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
+
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.strokeStyle = '#00ffff';
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00ffff';
+
+    ctx.beginPath();
+    ctx.moveTo(0, -player.height);
+    ctx.lineTo(player.width/2, player.height);
+    ctx.lineTo(0, player.height/2);
+    ctx.lineTo(-player.width/2, player.height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    shootTimer++;
+    if (shootTimer % 12 === 0) {
+        bullets.push({ x: player.x, y: player.y - player.height, speed: 8, radius: 4 });
+    }
+
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00ffff';
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+        b.y -= b.speed;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (b.y < 0) {
+            bullets.splice(i, 1);
+        }
+    }
+
+    spawnEnemy();
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let e = enemies[i];
+        e.y += e.speed;
+
+        ctx.save();
+        ctx.strokeStyle = e.color;
+        ctx.fillStyle = e.color + '33';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = e.color;
+
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        let distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+        if (distToPlayer < player.width/2 + e.radius) {
+            createParticles(e.x, e.y, e.color);
+            enemies.splice(i, 1);
+            lives--;
+            updateLivesDisplay();
+            if (lives <= 0) {
+                endGame();
+                return;
+            }
+            continue;
+        }
+
+        let destroyed = false;
+        for (let j = bullets.length - 1; j >= 0; j--) {
+            let b = bullets[j];
+            let distToBullet = Math.hypot(b.x - e.x, b.y - e.y);
+            if (distToBullet < b.radius + e.radius) {
+                createParticles(e.x, e.y, e.color);
+                enemies.splice(i, 1);
+                bullets.splice(j, 1);
+                score += 10;
+                scoreEl.innerText = score;
+                destroyed = true;
+                break;
+            }
+        }
+        if (destroyed) continue;
+
+        if (e.y > canvas.height + e.radius) {
+            enemies.splice(i, 1);
+        }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.03;
+
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.restore();
+    }
+
+    animationId = requestAnimationFrame(loop);
+}
+
+function updateLivesDisplay() {
+    let hearts = '';
+    for (let i = 0; i < lives; i++) hearts += '❤️';
+    livesEl.innerText = hearts;
+}
+
+function endGame() {
+    isPlaying = false;
+    cancelAnimationFrame(animationId);
+    finalScoreEl.innerText = score;
+    gameoverScreen.classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>
+"""
+with open("neon_space_shooter.html", "w", encoding="utf-8") as f:
+    f.write(full_code)
